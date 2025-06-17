@@ -14,7 +14,7 @@ func main() {
     fmt.Printf("Listening on %s\n", PORT)
 
     answer := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "\nHealthy!")
+        fmt.Fprintf(w, "")
     })
     http.ListenAndServe(":" + PORT, answer)
 }
