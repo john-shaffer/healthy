@@ -15,3 +15,10 @@ Or just `nix run` if run from inside the repository.
 If no $PORT is set, the env defaults to 8000:
 
 `PORT=1234 nix run github:john-shaffer/healthy`
+
+# Docker image
+
+```bash 
+nix build github:john-shaffer/healthy#healthy-image
+docker load -i ./result
+```
