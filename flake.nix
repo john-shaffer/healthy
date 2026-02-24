@@ -3,27 +3,59 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-      with import nixpkgs { inherit system; };
-      let
-        healthy = buildGoModule {
-          name = "healthy";
-          src = self;
-          vendorHash = null;
-        };
-        healthy-image = pkgs.dockerTools.buildLayeredImage {
-          name = "rs.shaffe/healthy";
-          config = { Cmd = [ "${healthy}/bin/healthy" ]; };
-        };
-      in with pkgs; {
-        devShells.default = mkShell { buildInputs = [ go ]; };
-        packages = {
+  outputs =
+    {
+      self,
+      nixpkgs,
+      ...
+    }:
+    let
+      supportedSystems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
+      forAllSystems =
+        function:
+        nixpkgs.lib.genAttrs supportedSystems (
+          system:
+          function system (
+            import nixpkgs {
+              inherit system;
+            }
+          )
+        );
+    in
+    {
+      devShells = forAllSystems (
+        system: pkgs: {
+          default = pkgs.mkShell {
+            buildInputs = [ pkgs.go ];
+          };
+        }
+      );
+      packages = forAllSystems (
+        system: pkgs:
+        let
+          healthy = pkgs.buildGoModule {
+            name = "healthy";
+            src = self;
+            vendorHash = null;
+          };
+          healthy-image = pkgs.dockerTools.buildLayeredImage {
+            name = "rs.shaffe/healthy";
+            config = {
+              Cmd = [ "${healthy}/bin/healthy" ];
+            };
+          };
+        in
+        {
           inherit healthy healthy-image;
           default = healthy;
-        };
-      });
+        }
+      );
+    };
 }
